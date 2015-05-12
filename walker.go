@@ -22,7 +22,7 @@ func (v Vector) Diff() Vector {
 	return y
 }
 
-func Walks(niter, nsteps, ncpu int, history Vector) Vector {
+func Walks(niter, nsteps, ncpu int, dest float64, history Vector) (float64, float64) {
 	runtime.GOMAXPROCS(ncpu)
 	destinations := make(Vector, niter)
 
@@ -38,8 +38,7 @@ func Walks(niter, nsteps, ncpu int, history Vector) Vector {
 		<-c // wait for one task to complete
 	}
 
-	// all done
-	return destinations
+	return compare(destinations, dest)
 }
 
 func (v Vector) Walk(i, nsteps int, steps Vector, c chan int) {
@@ -61,10 +60,25 @@ func walk(nsteps int, steps Vector) float64 {
 	return dest
 }
 
-func walks(niter, nsteps int, history Vector) Vector {
+func walks(niter, nsteps int, dest float64, history Vector) (float64, float64) {
 	destinations := make(Vector, niter)
 	for i := 0; i < niter; i++ {
 		destinations[i] = walk(nsteps, history)
 	}
-	return destinations
+	return compare(destinations, dest)
+}
+
+func compare(destinations Vector, dest float64) (float64, float64) {
+	n := float64(len(destinations))
+	var nlow, nhigh int
+
+	for _, d := range destinations {
+		if d > dest {
+			nlow++
+		} else if d < dest {
+			nhigh++
+		}
+	}
+
+	return float64(nlow) / n, float64(nhigh) / n
 }
